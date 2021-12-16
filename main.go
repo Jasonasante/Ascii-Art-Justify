@@ -4,7 +4,29 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"syscall"
+	"unsafe"
 )
+
+type winsize struct {
+	Row    uint16
+	Col    uint16
+	Xpixel uint16
+	Ypixel uint16
+}
+
+func getWidth() uint {
+	ws := &winsize{}
+	retCode, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
+		uintptr(syscall.Stdin),
+		uintptr(syscall.TIOCGWINSZ),
+		uintptr(unsafe.Pointer(ws)))
+
+	if int(retCode) == -1 {
+		panic(errno)
+	}
+	return uint(ws.Col)
+}
 
 func ToLower(s string) string {
 	lowstr := []rune(s)
@@ -62,8 +84,7 @@ func main() {
 			}
 		}
 	}
-	terminalSize := int(os.Stdout.Fd())
-	fmt.Println(terminalSize)
+
 	var alignFlag []string
 	estrCount := 0
 	var tempOutput [][]string
@@ -77,28 +98,10 @@ func main() {
 	}
 
 	alignFlag[1] = ToLower(alignFlag[1])
-	fmt.Println(alignFlag[1])
-	if (alignFlag[1] != "center") {
-		fmt.Println("Usage: go run . [STRING] [BANNER] [OPTION]")
-		fmt.Println("EX: go run . something standard --align=right")
-		os.Exit(0)
-	}
-	if (alignFlag[1] != "right") {
-		fmt.Println("Usage: go run . [STRING] [BANNER] [OPTION]")
-		fmt.Println("EX: go run . something standard --align=right")
-		os.Exit(0)
-	}
-	if (alignFlag[1] != "left") {
-		fmt.Println("Usage: go run . [STRING] [BANNER] [OPTION]")
-		fmt.Println("EX: go run . something standard --align=right")
-		os.Exit(0)
-	}
-	if (alignFlag[1] != "justify") {
-		fmt.Println("Usage: go run . [STRING] [BANNER] [OPTION]")
-		fmt.Println("EX: go run . something standard --align=right")
-		os.Exit(0)
-	}
 
+	length := int(getWidth())
+	centralLength:=length/2
+	fmt.Println(centralLength)
 	for j, str := range inputString {
 		for _, aRune := range str {
 			tempOutput = append(tempOutput, asciiSlice2[aRune-rune(32)])
@@ -107,7 +110,12 @@ func main() {
 		for i := range tempOutput[0] {
 			for _, char := range tempOutput {
 				if alignFlag[1] == "center" && estrCount == 0 {
-					fmt.Printf("%100v", char[i])
+					for i := 0; i < (length/2); i++ {
+						fmt.Printf(" ")
+					}
+					fmt.Print(char[i])
+				} else if alignFlag[1] == "left" {
+					fmt.Print(char[i])
 				} else {
 					fmt.Print(char[i])
 				}

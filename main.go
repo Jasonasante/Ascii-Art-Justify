@@ -87,6 +87,7 @@ func main() {
 
 	var alignFlag []string
 	estrCount := 0
+	lengthCount := 0
 	var tempOutput [][]string
 	// // why is it that when we used make, it did not print the first index?
 	if strings.HasPrefix(os.Args[3], "--align=") {
@@ -100,17 +101,24 @@ func main() {
 	alignFlag[1] = ToLower(alignFlag[1])
 
 	length := int(getWidth())
-	centralLength:=length/2
-	fmt.Println(centralLength)
+	charlength := 0
+	startingPoint:=0
+
 	for j, str := range inputString {
 		for _, aRune := range str {
 			tempOutput = append(tempOutput, asciiSlice2[aRune-rune(32)])
 			// due to the loop it will append the bubble eqivalent of the every letter inside inputString
 		}
 		for i := range tempOutput[0] {
-			for _, char := range tempOutput {
+			for k, char := range tempOutput {
+				if lengthCount==0 {
+					charlength += len(char[k])
+				}
 				if alignFlag[1] == "center" && estrCount == 0 {
-					for i := 0; i < (length/2); i++ {
+					startingPoint = ((length / 2) - (charlength / 2))
+					// fmt.Print(charlength)
+					// fmt.Print(startingPoint)
+					for l := 0; l < startingPoint; l++ {
 						fmt.Printf(" ")
 					}
 					fmt.Print(char[i])
@@ -123,12 +131,14 @@ func main() {
 				estrCount++
 				if estrCount == len(inputString[j]) {
 					estrCount = 0
+					lengthCount++
 				}
 				//fmt.Print(char[i])
 				// // this prints each line of each bubble letter (which is each slice of string)
 			}
 			fmt.Println()
 		}
+		//fmt.Println(charlength)
 		tempOutput = nil
 		// once the word has been printed, we want to reset tempOutput to nil, ready to be filled
 		// by the next string element in inputString.

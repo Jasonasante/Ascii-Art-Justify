@@ -16,7 +16,7 @@ type winsize struct {
 }
 
 // this function retrieves the width of the terminal
-func getWidth() uint {
+func getLength() uint {
 	ws := &winsize{}
 	retCode, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
 		uintptr(syscall.Stdin),
@@ -82,8 +82,6 @@ func main() {
 	}
 
 	var alignFlag []string
-	estrCount := 0
-	var tempOutput [][]string
 
 	if strings.HasPrefix(os.Args[3], "--align=") {
 		alignFlag = strings.Split(os.Args[3], "--align=")
@@ -95,50 +93,80 @@ func main() {
 
 	alignFlag[1] = ToLower(alignFlag[1])
 
-	length := int(getWidth())
+	estrCount := 0
+	var tempOutput [][]string
+	length := int(getLength())
+	// length is the length of the terminal
 	charlength := 0
+	// to obtain the length of the bubble word
 	startingPoint := 0
-	for j, str := range inputString {
-		for _, aRune := range str {
-			tempOutput = append(tempOutput, asciiSlice2[aRune-rune(32)])
-			// due to the loop it will append the bubble eqivalent of the every letter inside inputString
-		}
-		// the loop below is to get the length of the first line of every bubble character
-		for h := 0; h < len(tempOutput); h++ {
-			charlength += len(tempOutput[h][0])
-		}
-		for i := range tempOutput[0] {
-			for _, char := range tempOutput {
-				if alignFlag[1] == "center" && estrCount == 0 {
-					startingPoint = (length / 2) - (charlength / 2)
-					for l := 0; l < startingPoint; l++ {
-						fmt.Printf(" ")
-					}
-					fmt.Print(char[i])
-				} else if alignFlag[1] == "left" {
-					fmt.Print(char[i])
-				} else if alignFlag[1] == "right" && estrCount == 0 {
-					startingPoint = (length - charlength)
-					for l := 0; l < startingPoint; l++ {
-						fmt.Printf(" ")
-					}
-					fmt.Print(char[i])
-				} else {
-					fmt.Print(char[i])
+	justifySpace := 0
+	// justifySpace is to obtain the number of space characters there are in the input string. 
+	// this is necessary for the equation ((length - charlength) / justifySpace) so that
+	//the appropriate number of spaces is add after each space character to fill the terminal size.
+	var ind []int
+	/// ind is to obtain the index of the spaces. This is necessary for the justify alignment
+	if alignFlag[1] == "right" || alignFlag[1] == "left" || alignFlag[1] == "justify" || alignFlag[1] == "center" {
+		for j, str := range inputString {
+			for g, aRune := range str {
+				if aRune == 32 {
+					ind=append(ind, (g+1))
+					justifySpace++
+
 				}
-				//now figure how how to replace %110v with the
-				estrCount++
-				if estrCount == len(inputString[j]) {
-					estrCount = 0
-				}
-				// // this prints each line of each bubble letter (which is each slice of string)
+				tempOutput = append(tempOutput, asciiSlice2[aRune-rune(32)])
+				// due to the loop it will append the bubble eqivalent of the every letter inside inputString
 			}
-			fmt.Println()
+			// the loop below is to get the length of the first line of every bubble character
+			for h := 0; h < len(tempOutput); h++ {
+				charlength += len(tempOutput[h][0])
+			}
+			for i := range tempOutput[0] {
+				for _, char := range tempOutput {
+					if alignFlag[1] == "center" && estrCount == 0 {
+						startingPoint = (length / 2) - (charlength / 2)
+						for l := 0; l < startingPoint; l++ {
+							fmt.Printf(" ")
+						}
+						fmt.Print(char[i])
+					} else if alignFlag[1] == "left" {
+						fmt.Print(char[i])
+					} else if alignFlag[1] == "right" && estrCount == 0 {
+						startingPoint = (length - charlength)
+						for l := 0; l < startingPoint; l++ {
+							fmt.Printf(" ")
+						}
+						fmt.Print(char[i])
+					} else if alignFlag[1] == "justify" {
+						startingPoint = ((length - charlength) / justifySpace)
+						for _,s:=range ind{
+							//this print the appropriate number of space after the bubble space character
+							if estrCount== s{
+								for l := 0; l < startingPoint; l++ {
+									fmt.Printf(" ")
+								}
+							}
+						}
+						fmt.Print(char[i])
+					} else {
+						fmt.Print(char[i])
+					}
+					estrCount++
+					if estrCount == len(inputString[j]) {
+						estrCount = 0
+					}
+					// // this prints each line of each bubble letter (which is each slice of string)
+				}
+				fmt.Println()
+			}
+			tempOutput = nil
+			charlength = 0
+			// once the word has been printed, we want to reset tempOutput to nil, ready to be filled
+			// by the next string element in inputString.
 		}
-		//fmt.Println(charlength)
-		tempOutput = nil
-		charlength = 0
-		// once the word has been printed, we want to reset tempOutput to nil, ready to be filled
-		// by the next string element in inputString.
+	} else {
+		fmt.Println("Usage: go run . [STRING] [BANNER] [OPTION]")
+		fmt.Println("EX: go run . something standard --align=right")
+		os.Exit(0)
 	}
 }

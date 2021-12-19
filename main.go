@@ -15,6 +15,7 @@ type winsize struct {
 	Ypixel uint16
 }
 
+// this function retrieves the width of the terminal
 func getWidth() uint {
 	ws := &winsize{}
 	retCode, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
@@ -28,6 +29,7 @@ func getWidth() uint {
 	return uint(ws.Col)
 }
 
+//to lower case the assigned alignment in case user uses a capital letter
 func ToLower(s string) string {
 	lowstr := []rune(s)
 	for i, char := range lowstr {
@@ -38,13 +40,12 @@ func ToLower(s string) string {
 	return string(lowstr)
 }
 
+//print the incoming string as a GUI in the preferred alignment stated by the user.
 func main() {
 	var emptyString string
 	var inputString []string
 	if len(os.Args) == 4 {
 		inputString = strings.Split(os.Args[1], "\\n")
-		// this takes the argument that we are printing and seperates them into a []string via \n
-		// this will then therefore automatically will print each []string on a new line.
 	} else {
 		fmt.Println("Usage: go run . [STRING] [BANNER] [OPTION]")
 		fmt.Println("EX: go run . something standard --align=right")
@@ -67,15 +68,10 @@ func main() {
 			// so asciiSlice2[1][0] is the 1st row of the exclamation mark
 			emptyString = ""
 			count++
-			// we want count to get to 8 as that is the number of rows (height of the 8)
 		}
 		if count == 9 {
 			count = 0
 			bubbleCount++
-			// i++
-			// once we have the 8 rows of the bubble text, we want to move onto the next index of the
-			// asciiSlice2, hence bubbleCount++
-			// We also have i++
 		} else {
 			if Content[i] != '\n' && Content[i] != '\r' {
 				emptyString += string(Content[i])
@@ -87,9 +83,8 @@ func main() {
 
 	var alignFlag []string
 	estrCount := 0
-	lengthCount := 0
 	var tempOutput [][]string
-	// // why is it that when we used make, it did not print the first index?
+
 	if strings.HasPrefix(os.Args[3], "--align=") {
 		alignFlag = strings.Split(os.Args[3], "--align=")
 	} else {
@@ -102,27 +97,31 @@ func main() {
 
 	length := int(getWidth())
 	charlength := 0
-	startingPoint:=0
-
+	startingPoint := 0
 	for j, str := range inputString {
 		for _, aRune := range str {
 			tempOutput = append(tempOutput, asciiSlice2[aRune-rune(32)])
 			// due to the loop it will append the bubble eqivalent of the every letter inside inputString
 		}
+		// the loop below is to get the length of the first line of every bubble character
+		for h := 0; h < len(tempOutput); h++ {
+			charlength += len(tempOutput[h][0])
+		}
 		for i := range tempOutput[0] {
-			for k, char := range tempOutput {
-				if lengthCount==0 {
-					charlength += len(char[k])
-				}
+			for _, char := range tempOutput {
 				if alignFlag[1] == "center" && estrCount == 0 {
-					startingPoint = ((length / 2) - (charlength / 2))
-					// fmt.Print(charlength)
-					// fmt.Print(startingPoint)
+					startingPoint = (length / 2) - (charlength / 2)
 					for l := 0; l < startingPoint; l++ {
 						fmt.Printf(" ")
 					}
 					fmt.Print(char[i])
 				} else if alignFlag[1] == "left" {
+					fmt.Print(char[i])
+				} else if alignFlag[1] == "right" && estrCount == 0 {
+					startingPoint = (length - charlength)
+					for l := 0; l < startingPoint; l++ {
+						fmt.Printf(" ")
+					}
 					fmt.Print(char[i])
 				} else {
 					fmt.Print(char[i])
@@ -131,15 +130,14 @@ func main() {
 				estrCount++
 				if estrCount == len(inputString[j]) {
 					estrCount = 0
-					lengthCount++
 				}
-				//fmt.Print(char[i])
 				// // this prints each line of each bubble letter (which is each slice of string)
 			}
 			fmt.Println()
 		}
 		//fmt.Println(charlength)
 		tempOutput = nil
+		charlength = 0
 		// once the word has been printed, we want to reset tempOutput to nil, ready to be filled
 		// by the next string element in inputString.
 	}
